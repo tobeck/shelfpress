@@ -65,6 +65,12 @@ Verified against <https://demo.bookstackapp.com/api/docs>:
 - `PUT /api/shelves/{id}` takes a `books` array of book IDs — shelf membership is
   set from the shelf side, not the book side.
 - List endpoints support `count` / `offset` paging and `filter[field]`.
+- **List endpoints omit `tags`** (and page body) from their responses — see
+  [BookStackApp/BookStack#2680](https://github.com/BookStackApp/BookStack/issues/2680).
+  `/api/search` *does* return tags and supports tag terms (`[name=value]`) plus a
+  type restriction (`{type:page}`), so shelfpress recovers its managed pages with a
+  single search rather than fetching every page's detail. This is why the client
+  exposes `SearchPagesByTag` alongside `ListPages`.
 - `DELETE` sends content to BookStack's **recycle bin** (soft delete), so pruning
   is recoverable.
 
