@@ -28,6 +28,19 @@ jobs:
             exit 1
           fi
 
+      - name: Verify go.mod and go.sum are tidy
+        # go.mod/go.sum merge cleanly as text while being semantically wrong:
+        # merging a branch that added a dependency can drop another branch's
+        # requirements, leaving code importing packages go.mod no longer
+        # declares. Regenerating and diffing catches that on the PR.
+        run: |
+          go mod tidy
+          if ! git diff --exit-code go.mod go.sum; then
+            echo
+            echo "::error::go.mod/go.sum are not tidy. Run 'go mod tidy' and commit the result."
+            exit 1
+          fi
+
       - name: Vet
         run: go vet ./...
 
