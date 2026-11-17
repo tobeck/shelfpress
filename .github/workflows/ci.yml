@@ -32,9 +32,11 @@ jobs:
         run: go vet ./...
 
       - name: Lint
-        uses: golangci/golangci-lint-action@v6
+        uses: golangci/golangci-lint-action@v9
         with:
-          version: latest
+          # Pinned: `latest` once resolved to a build targeting an older Go
+          # than this module, which fails the config load.
+          version: v2.15.0
 
       - name: Test
         run: go test -race ./...
