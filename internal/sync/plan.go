@@ -46,7 +46,7 @@ func (p *Planner) Plan(ctx context.Context, docs []scan.Document) (Plan, error) 
 	if state.shelf == nil {
 		plan.Ops = append(plan.Ops, Op{
 			Kind:   OpCreateShelf,
-			Target: fmt.Sprintf("shelf %q", p.cfg.Shelf),
+			Target: fmt.Sprintf("%q", p.cfg.Shelf),
 			Shelf: &bookstack.ShelfInput{
 				Name:        p.cfg.Shelf,
 				Description: p.cfg.ShelfDescription,
@@ -59,7 +59,7 @@ func (p *Planner) Plan(ctx context.Context, docs []scan.Document) (Plan, error) 
 	if book == nil {
 		plan.Ops = append(plan.Ops, Op{
 			Kind:   OpCreateBook,
-			Target: fmt.Sprintf("book %q", bookName),
+			Target: fmt.Sprintf("%q", bookName),
 			Book: &bookstack.BookInput{
 				Name: bookName,
 				Tags: managedTags(p.cfg.Repo),
@@ -152,7 +152,7 @@ func (p *Planner) pageOps(docs []scan.Document, s state, bookName string) []Op {
 		if !found {
 			ops = append(ops, Op{
 				Kind:     OpCreatePage,
-				Target:   fmt.Sprintf("page %q", doc.Title),
+				Target:   fmt.Sprintf("%q", doc.Title),
 				Detail:   "from " + doc.SourcePath,
 				BookName: bookName,
 				Page:     input,
@@ -166,7 +166,7 @@ func (p *Planner) pageOps(docs []scan.Document, s state, bookName string) []Op {
 		}
 		ops = append(ops, Op{
 			Kind:     OpUpdatePage,
-			Target:   fmt.Sprintf("page %q", doc.Title),
+			Target:   fmt.Sprintf("%q", doc.Title),
 			Detail:   reason,
 			ID:       existing.ID,
 			BookName: bookName,
@@ -246,8 +246,8 @@ func (p *Planner) shelfMembershipOp(s state, bookName string, book *bookstack.Bo
 	if s.shelf == nil {
 		return Op{
 			Kind:     OpUpdateShelfBooks,
-			Target:   fmt.Sprintf("shelf %q", p.cfg.Shelf),
-			Detail:   "add book " + bookName,
+			Target:   fmt.Sprintf("%q", p.cfg.Shelf),
+			Detail:   "onto the shelf",
 			BookName: bookName,
 		}, true
 	}
@@ -262,8 +262,8 @@ func (p *Planner) shelfMembershipOp(s state, bookName string, book *bookstack.Bo
 
 	return Op{
 		Kind:     OpUpdateShelfBooks,
-		Target:   fmt.Sprintf("shelf %q", p.cfg.Shelf),
-		Detail:   "add book " + bookName,
+		Target:   fmt.Sprintf("%q", p.cfg.Shelf),
+		Detail:   "onto the shelf",
 		ID:       s.shelf.ID,
 		BookName: bookName,
 	}, true
