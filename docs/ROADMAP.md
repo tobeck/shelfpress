@@ -110,6 +110,16 @@ Scope:
 - Markdown plan rendering wired to PR review in the Action example
 - `CONTRIBUTING.md` (dev setup, test commands, PR expectations), `CODE_OF_CONDUCT.md`
 - Label taxonomy; a few genuinely small issues marked `good first issue`
+- **Considered: automated Claude PR review**
+  ([claude-code-action](https://github.com/anthropics/claude-code-action)).
+  Deliberately deferred from v0.1 — while the maintainer writes and reviews every
+  PR, an agent reviewing agent-written code shares its blind spots. It earns its
+  place once outside contributions arrive. If adopted: use the `pull_request`
+  trigger, never `pull_request_target` (GitHub withholds secrets from forks on the
+  former, and the action restores `CLAUDE.md` from the base branch so a fork
+  cannot rewrite the reviewer's own instructions — which matters for a tool whose
+  input is untrusted markdown). Authenticate with a subscription OAuth token
+  rather than an API key to avoid unbounded spend on a public repo.
 
 Done when: an outside contributor could clone, build, test, and submit a PR using
 only the docs.
