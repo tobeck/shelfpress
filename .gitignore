@@ -1,0 +1,4 @@
+/dist/
+/shelfpress
+*.out
+.env
