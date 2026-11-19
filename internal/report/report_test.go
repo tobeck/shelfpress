@@ -122,7 +122,7 @@ func TestPlanReportsOrphans(t *testing.T) {
 
 	out := renderPlan(t, p, PlanOptions{})
 
-	for _, want := range []string{"Use Redis", "docs/decisions/0003-use-redis.md", "Left in place", "v0.2"} {
+	for _, want := range []string{"Use Redis", "docs/decisions/0003-use-redis.md", "Left in place", "v0.3"} {
 		if !strings.Contains(out, want) {
 			t.Errorf("output missing %q:\n%s", want, out)
 		}

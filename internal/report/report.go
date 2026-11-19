@@ -150,7 +150,7 @@ func writeOrphans(b *strings.Builder, p sync.Plan) {
 	for _, o := range p.Unmanaged {
 		fmt.Fprintf(b, "  %s — was %s\n", o.Title, o.SourcePath)
 	}
-	b.WriteString("Left in place. Removing them automatically arrives in v0.2.\n")
+	b.WriteString("Left in place. Removing them automatically arrives in v0.3.\n")
 }
 
 // summarise renders the per-kind counts in a fixed order.

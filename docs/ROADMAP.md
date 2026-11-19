@@ -19,6 +19,26 @@ real ADR reaches BookStack early, and each later release exercises a different
 maintainer muscle — versioning, triage, reviewing an outside PR, deprecating a flag,
 handling a security report.
 
+### Revised after v0.1 (2026-11-19)
+
+The original plan put integration testing at v0.5, after the destructive
+features. Wiring up the CLI in #22 proved that wrong: **every sync was rewriting
+every page**, because BookStack's search endpoint returns tags but no body
+content and the planner compared against the empty string. Unit tests at 91%
+coverage passed throughout — the fake returned bodies the real API never sends,
+so fakes agreeing with each other proved nothing.
+
+Two consequences, both now reflected below:
+
+1. **Integration testing moves to v0.2**, ahead of everything else. The next bug
+   of that shape is equally invisible to fakes.
+2. **Pruning moves behind it.** Deleting content is the one irreversible thing
+   shelfpress does; it must not ship before the tool has been proven against a
+   real BookStack.
+
+The first real user is already waiting (manual/scripted syncing today), which
+also argues for proving correctness before adding surface area.
+
 ---
 
 ## v0.1 — Walking skeleton
@@ -46,31 +66,74 @@ re-running writes nothing.
 
 ---
 
-## v0.2 — Full mapping and deletion
+## v0.2 — Proof against a real BookStack
+
+**Capability:** no new user-facing features, and that is the point. A local
+BookStack via docker-compose, plus integration tests running against it in CI
+with no secrets, so fork PRs get full coverage.
+
+**Why first:** #22 found that every sync rewrote every page, invisible to unit
+tests because the fake returned body content the real API omits. Everything after
+this milestone is built on an assumption this milestone verifies.
+
+**Maintenance practice:** `SECURITY.md` and branch protection. The tool handles
+API tokens, so a vulnerability-report process is not theoretical.
+
+Scope:
+- `deploy/dev/docker-compose.yml` — BookStack + MariaDB
+- **Headless API-token seeding** (BookStack normally issues tokens through its web
+  UI; tests need them seeded via CLI/DB). The known hard part of the milestone.
+- `test/integration/` behind `//go:build integration`, skipping when
+  `BOOKSTACK_URL` is unset so `go test ./...` stays hermetic
+- CI job with BookStack as a service container — no secrets, so forks are covered
+- **An idempotency test against the real API**: sync, sync again, assert zero
+  writes. This is the regression that motivated the reorder.
+- Round-trip assertions: what BookStack stores and returns for markdown, tags
+  and priority, documented as findings in `docs/ARCHITECTURE.md`
+- `SECURITY.md`, branch protection, `CODEOWNERS`
+
+Done when: `make dev-up && make test-integration` works from a clean clone, a
+fork PR runs the full suite, and the idempotency test passes against a real
+BookStack.
+
+**You learn:** CI that works for contributors without handing them secrets; why
+a test double that is kinder than reality is worse than no test; security
+disclosure process.
+
+---
+
+## v0.3 — Full mapping and deletion
 
 **Capability:** the complete layout rules — subdirectory→book, loose file→its own
 book+page, mixed trees applying both. Pruning when a source file disappears,
 `--no-prune` to disable.
 
+**Why after integration tests:** pruning is the only irreversible thing
+shelfpress does. It must not ship before the tool has been proven against a real
+instance — and the integration suite from v0.2 is what proves a delete removes
+what it should and nothing else.
+
 **Maintenance practice:** `CHANGELOG.md` (Keep a Changelog format) and issue/PR
-templates. This is the first release with *existing users*, so breaking changes now
-have a cost — write the changelog entry that explains the mapping change.
+templates. First release with existing users, so breaking changes now have a
+cost — write the changelog entry that explains the mapping change.
 
 Scope:
 - Layout classification and the three mapping rules
 - `DeletePage` / `DeleteBook` ops, prune config and flag
 - Orphan reporting for untagged content (never touched, only reported)
+- **Integration tests for deletion**: a pruned page really goes to the recycle
+  bin, and untagged content survives a prune
 - `CHANGELOG.md`, `.github/ISSUE_TEMPLATE/`, PR template
 
-Done when: deleting an ADR from the repo removes it from BookStack, and a mixed-
-layout repo syncs correctly.
+Done when: deleting a file removes its page from BookStack, a mixed-layout repo
+syncs correctly, and both are verified against a live instance.
 
 **You learn:** writing a changelog someone else can read; migration notes; why
 default-on destructive behaviour needs loud documentation.
 
 ---
 
-## v0.3 — Container and CI-agnostic distribution
+## v0.4 — Container and CI-agnostic distribution
 
 **Capability:** multi-arch container image on GHCR, plus the GitHub Action wrapper
 and worked examples for GitLab CI and Woodpecker. `--format json`, `--output-file`,
@@ -95,7 +158,7 @@ floating-major-tag convention (`v1`) that Action consumers depend on.
 
 ---
 
-## v0.4 — Metadata and review workflow
+## v0.5 — Metadata and review workflow
 
 **Capability:** MADR frontmatter → BookStack tags (`status`, `date`,
 `decision-makers`, `consulted`, `informed`), so decisions are filterable in
@@ -129,37 +192,6 @@ only the docs.
 
 **You learn:** writing docs for contributors rather than users; triage; how labels
 shape what help you get.
-
----
-
-## v0.5 — Integration testing and a real dev environment
-
-**Capability:** no new user-facing features. Instead, correctness confidence — a
-local BookStack via docker-compose, and integration tests running against it in CI
-with no secrets, so fork PRs get full coverage.
-
-**Maintenance practice:** `SECURITY.md` and branch protection. The tool handles API
-tokens, so a vulnerability-report process is not theoretical.
-
-Scope:
-- `deploy/dev/docker-compose.yml` — BookStack + MariaDB
-- **Headless API-token seeding** (BookStack normally issues tokens through its web
-  UI; tests need them seeded via CLI/DB). This is the known hard part of the
-  milestone.
-- `test/integration/` behind `//go:build integration`, skipping when
-  `BOOKSTACK_URL` is unset so `go test ./...` stays hermetic
-- CI job with BookStack as a service container
-- `SECURITY.md`, branch protection, `CODEOWNERS`
-
-Done when: `make dev-up && make test-integration` works from a clean clone, and a
-fork PR runs the full suite.
-
-**You learn:** CI that works for contributors without handing them secrets; security
-disclosure process; why the test environment is itself a maintained artifact.
-
-**Note:** this milestone bends the "every release is user-visible" rule. It still
-ships — contributors are users of the dev environment — but if it feels too
-internal, fold the dev-env work into v0.4 and promote v0.6 forward.
 
 ---
 
@@ -208,10 +240,13 @@ Parked, not forgotten. Keeping these out is what makes v1.0 reachable.
 
 ```
 v0.1  scaffold -> madr/scan -> bookstack client -> planner -> applier -> release
-v0.2  layout rules -> prune -> changelog + templates
-v0.3  container -> action + CI examples -> output formats -> release automation
-v0.4  frontmatter tags -> CI summary -> contributor docs
-v0.5  dev compose -> headless token seeding -> integration tests -> security policy
+v0.2  dev compose -> headless token seeding -> integration tests
+      -> real-API idempotency proof -> security policy
+v0.3  layout rules -> prune (+ integration tests for deletion)
+      -> changelog + templates
+v0.4  container -> action + CI examples -> output formats -> release automation
+v0.5  frontmatter tags -> publish-time warnings -> CI summary
+      -> contributor docs
 v1.0  hardening -> docs -> stability + governance policy
 ```
 

@@ -125,7 +125,7 @@ func TestWalkSkipsSubdirectoriesWithWarning(t *testing.T) {
 		t.Errorf("got %d warnings, want one per skipped subdirectory", len(warnings))
 	}
 	for _, w := range warnings {
-		if !strings.Contains(w, "v0.2") {
+		if !strings.Contains(w, "v0.3") {
 			t.Errorf("warning %q should say when directory support arrives", w)
 		}
 	}
