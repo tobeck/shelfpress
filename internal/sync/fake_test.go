@@ -201,7 +201,13 @@ func (f *fakeClient) SearchPagesByTag(_ context.Context, name, value string) ([]
 		if value != "" && got != value {
 			continue
 		}
-		out = append(out, p)
+
+		// The real search endpoint returns tags but no body content, so the
+		// fake must too — otherwise a planner that forgets to fetch the
+		// page detail passes here and fails against BookStack.
+		out = append(out, bookstack.Page{
+			ID: p.ID, BookID: p.BookID, Name: p.Name, Slug: p.Slug, Tags: p.Tags,
+		})
 	}
 	return out, nil
 }
