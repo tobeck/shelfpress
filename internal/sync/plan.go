@@ -122,6 +122,7 @@ func (p *Planner) fetchState(ctx context.Context) (state, error) {
 	if err != nil {
 		return state{}, fmt.Errorf("searching managed pages: %w", err)
 	}
+
 	for _, page := range managed {
 		if !isManaged(page.Tags, p.cfg.Repo) {
 			continue
@@ -130,7 +131,18 @@ func (p *Planner) fetchState(ctx context.Context) (state, error) {
 		if !ok || source == "" {
 			continue
 		}
-		s.pages[source] = page
+
+		// Search results carry tags but no body, so the stored markdown has
+		// to be fetched per page before it can be compared. Skipping this
+		// makes every page look changed on every run, which defeats
+		// idempotency entirely.
+		detail, err := p.client.GetPage(ctx, page.ID)
+		if err != nil {
+			return state{}, fmt.Errorf("reading page %d (%s): %w", page.ID, source, err)
+		}
+		detail.Tags = page.Tags
+
+		s.pages[source] = detail
 	}
 
 	return s, nil
