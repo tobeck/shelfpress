@@ -39,7 +39,7 @@ const (
 // OpKind identifies what an operation does.
 type OpKind string
 
-// The operations v0.1 can plan. Deletes arrive in v0.2.
+// The operations v0.1 can plan. Deletes arrive in v0.3.
 const (
 	OpCreateShelf      OpKind = "create-shelf"
 	OpCreateBook       OpKind = "create-book"
@@ -101,7 +101,7 @@ type Plan struct {
 	ShelfExists bool
 
 	// Unmanaged lists pages carrying shelfpress tags whose source file is
-	// gone. v0.1 only reports them; pruning arrives in v0.2.
+	// gone. v0.1 only reports them; pruning arrives in v0.3.
 	Unmanaged []Orphan
 }
 

@@ -216,6 +216,15 @@ are soft (recycle bin).
 Idempotency check: body comparison normalises trailing whitespace and line endings,
 because BookStack echoes back markdown it has stored.
 
+**Search results carry no body.** `/api/search` returns tags but omits page
+content, so the planner must fetch each managed page's detail with
+`GET /api/pages/{id}` before comparing bodies. Comparing against the search
+result instead makes every page look changed and rewrites the whole shelf on
+every run — a bug that shipped through unit tests at 91% coverage because the
+test double returned bodies the real API never sends. The fakes now strip body
+content from search results, and `make test-integration` (v0.2) verifies the
+behaviour against a live instance.
+
 ## Module layout
 
 ```

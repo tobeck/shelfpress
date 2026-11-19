@@ -2,7 +2,7 @@
 // it finds into documents the planner can diff against BookStack.
 //
 // v0.1 handles a single flat directory. The subdirectory and mixed-layout
-// rules described in docs/ARCHITECTURE.md arrive in v0.2.
+// rules described in docs/ARCHITECTURE.md arrive in v0.3.
 package scan
 
 import (
@@ -51,7 +51,7 @@ type Options struct {
 // Walk returns a Document for every markdown file directly inside the root,
 // sorted by SourcePath so that plans are stable between runs.
 //
-// Subdirectories are skipped with a warning; support for them lands in v0.2.
+// Subdirectories are skipped with a warning; support for them lands in v0.3.
 // An empty directory is not an error.
 func Walk(opts Options) ([]Document, error) {
 	if opts.Root == "" {
@@ -99,7 +99,7 @@ func consider(opts Options, base string, entry fs.DirEntry) (Document, bool, err
 	}
 
 	if entry.IsDir() {
-		warn(opts, "skipping subdirectory %q: directory mapping arrives in v0.2", name)
+		warn(opts, "skipping subdirectory %q: directory mapping arrives in v0.3", name)
 		return Document{}, false, nil
 	}
 
