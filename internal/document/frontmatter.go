@@ -1,4 +1,4 @@
-package madr
+package document
 
 import (
 	"bytes"

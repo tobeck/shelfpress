@@ -1,13 +1,12 @@
 # Architecture — shelfpress
 
-> **Publish your repo's markdown docs to BookStack.** Built for
-> [MADR](https://adr.github.io/madr/) architecture decision records; works with any
-> markdown tree. A single binary, runnable from any CI.
+> **Publish your repo's markdown docs to BookStack.** Works with any markdown
+> tree; [MADR](https://adr.github.io/madr/) architecture decision records get
+> first-class support. A single binary, runnable from any CI.
 
-Publish markdown documentation (flagship case: [MADR](https://adr.github.io/madr/)
-architecture decision records) from a git repo to a [BookStack](https://www.bookstackapp.com/)
-instance, so a repo that adds, edits, or deletes an ADR gets its BookStack shelf
-updated automatically.
+Publish markdown documentation from a git repo to a
+[BookStack](https://www.bookstackapp.com/) instance, so a repo that adds, edits,
+or deletes a document gets its BookStack shelf updated automatically.
 
 **The product is a single static binary, plus a container image wrapping it.** Any
 CI system — GitHub Actions, GitLab CI, Woodpecker, Jenkins, Drone — or a plain cron
@@ -27,13 +26,59 @@ container, never a privileged path.
 - Distributed as prebuilt binaries (linux/darwin × amd64/arm64) and a multi-arch
   container image; buildable from source with `go build`.
 
+## Scope
+
+shelfpress is a **markdown → BookStack** sync tool. Any markdown tree works; no
+frontmatter, heading, or naming convention is required.
+
+**MADR gets first-class support** because ADRs-in-git is the use case that
+motivated the tool: frontmatter becomes BookStack tags so decisions are
+filterable by status, and the `NNNN-` filename prefix sets page order. None of it
+is mandatory, and nothing about the sync path is MADR-shaped.
+
+### Validation: publishing concerns only
+
+shelfpress warns about things that affect **what reaches BookStack** — a document
+with no title source, two pages that would share a title in one book, frontmatter
+it does not recognise. Warnings never block a publish.
+
+It is **not** a MADR validator and will not become one. Whether a record has the
+right sections, a valid status, or a coherent supersession graph is answered well
+by dedicated linters — [adrkit](https://github.com/mbeacom/adrkit),
+[adrlint](https://github.com/polylint/adrlint),
+[madr-lint](https://github.com/knktkc/madr-lint). They compose cleanly:
+
+```sh
+adrkit lint        # is the decision record correct?
+shelfpress sync    # publish it
+```
+
 ## Non-goals
 
 Permanent, not merely deferred:
 
+- **Linting or validating MADR correctness** — covered by the tools above.
 - Two-way sync. BookStack is a publish target; the repo is the source of truth.
 - Rendering BookStack-specific markup, attachments, or image upload.
 - Supporting non-git sources.
+
+## Why this exists
+
+Surveyed November 2026. BookStack's core team has stated that
+[git will not become first-class and will not be built in](https://github.com/BookStackApp/BookStack/issues/5361),
+so the gap is permanent rather than something upstream will close. Existing
+third-party tools top out around 10 GitHub stars:
+
+| Tool | Language | Last release | Gap |
+| ---- | -------- | ------------ | --- |
+| [JaCoB1123/bookstack-import](https://github.com/JaCoB1123/bookstack-import) | Go | 2024-07 | Import only; no update path |
+| [lazybytez/sync-markdown-bookstack-action](https://github.com/lazybytez/sync-markdown-bookstack-action) | JS | 2023-09 | Matches pages by H1 title, so renaming a heading orphans the page; no deletes |
+| [barneycatatau/Bookstack-MD-Importer](https://github.com/barneycatatau/Bookstack-MD-Importer) | Python | 2026-06 | Interactive prompts, so unusable in CI; no deletes or dry run |
+| [JulioLoayzaM/bsimport](https://github.com/JulioLoayzaM/bsimport) | Python | 2022-12 | Import only |
+
+What shelfpress does differently: tag-based identity that survives renames,
+deletion propagation, a trustworthy dry run, and no interactive prompts — it is
+built for CI first.
 
 Deferred items with a possible future are tracked in [ROADMAP.md](ROADMAP.md).
 

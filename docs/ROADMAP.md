@@ -107,6 +107,9 @@ Make the project contributable by someone who isn't you.
 Scope:
 - Frontmatter parsing, tag mapping, body stripping
 - `priority` from the `NNNN` filename prefix
+- **Publish-time warnings**: no title source, duplicate titles within a book,
+  unrecognised frontmatter. Warnings only — shelfpress never validates MADR
+  correctness, which `adrkit`/`adrlint`/`madr-lint` already do well.
 - Markdown plan rendering wired to PR review in the Action example
 - `CONTRIBUTING.md` (dev setup, test commands, PR expectations), `CODE_OF_CONDUCT.md`
 - Label taxonomy; a few genuinely small issues marked `good first issue`

@@ -13,7 +13,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/tobeck/shelfpress/internal/madr"
+	"github.com/tobeck/shelfpress/internal/document"
 )
 
 // markdownExt is the only file extension shelfpress publishes.
@@ -130,7 +130,7 @@ func consider(opts Options, base string, entry fs.DirEntry) (Document, bool, err
 		return Document{}, false, err
 	}
 
-	parsed, err := madr.Parse(sourcePath, content)
+	parsed, err := document.Parse(sourcePath, content)
 	if err != nil {
 		return Document{}, false, fmt.Errorf("scan: %w", err)
 	}
