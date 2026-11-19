@@ -1,16 +1,21 @@
 # shelfpress
 
 **Publish your repo's markdown docs to [BookStack](https://www.bookstackapp.com/).**
-Built for [MADR](https://adr.github.io/madr/) architecture decision records; works
-with any markdown tree. A single binary, runnable from any CI.
+Works with any markdown tree; [MADR](https://adr.github.io/madr/) architecture
+decision records get first-class support. A single binary, runnable from any CI.
 
 > ⚠️ **Early development.** Working toward [v0.1](docs/ROADMAP.md). Not usable yet.
 
 ## What it does
 
-Keep your ADRs in git, where they're reviewed alongside the code they describe, and
-have them show up in BookStack for everyone else. Add, edit, or delete a markdown
-file; shelfpress makes BookStack match on your next CI run.
+Keep your documentation in git, where it's reviewed alongside the code it
+describes, and have it show up in BookStack for everyone else. Add, edit, or
+delete a markdown file; shelfpress makes BookStack match on your next CI run.
+
+Any markdown tree works — no frontmatter or naming convention required. Writing
+[MADR](https://adr.github.io/madr/) decision records? Their frontmatter becomes
+BookStack tags, so decisions stay filterable by status, and the `NNNN-` prefix
+sets page order.
 
 ```
 docs/decisions/                      Shelf "Architecture Decisions"
@@ -76,6 +81,22 @@ prune: true          # remove BookStack content when its source file is deleted
 
 Create an API token in BookStack under your user profile → **API Tokens**
 (requires the *Access System API* permission).
+
+## What it isn't
+
+shelfpress publishes; it does not validate. Whether a decision record has the
+right sections, a valid status, or a coherent supersession graph is a different
+job, well covered by [adrkit](https://github.com/mbeacom/adrkit),
+[adrlint](https://github.com/polylint/adrlint) and
+[madr-lint](https://github.com/knktkc/madr-lint). They compose:
+
+```sh
+adrkit lint        # is the decision record correct?
+shelfpress sync    # publish it
+```
+
+shelfpress warns only about things that affect the published result — a document
+with no usable title, or two pages that would collide in one book.
 
 ## Documentation
 

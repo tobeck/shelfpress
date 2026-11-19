@@ -1,11 +1,17 @@
-// Package madr parses markdown documents into the fields shelfpress publishes.
+// Package document parses markdown files into the fields shelfpress publishes.
 //
-// It is named for [MADR], the architecture-decision-record format shelfpress was
-// built around, but nothing here is MADR-specific: any markdown file parses, and
-// a document without frontmatter or a numeric prefix is entirely valid.
+// Nothing here is specific to any markdown dialect: a file without frontmatter,
+// an H1, or a numeric prefix parses perfectly well. [MADR] architecture
+// decision records are the flagship case and get first-class treatment — their
+// frontmatter is preserved for tag mapping and their NNNN- prefix sets page
+// order — but they are one supported shape, not a requirement.
+//
+// Validating that a document is a *correct* MADR is deliberately out of scope;
+// dedicated linters such as adrkit and adrlint do that well. This package only
+// cares what will reach BookStack.
 //
 // [MADR]: https://adr.github.io/madr/
-package madr
+package document
 
 import (
 	"fmt"

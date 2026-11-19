@@ -1,6 +1,7 @@
 # CLAUDE.md — shelfpress
 
-> Publish a repo's markdown docs (flagship case: MADR ADRs) to BookStack.
+> Publish a repo's markdown docs to BookStack. Any markdown tree; MADR
+> decision records get first-class support.
 > This file is the contract every coding agent obeys when working this repo.
 
 Read [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) before starting any issue — it
@@ -38,7 +39,7 @@ milestone each issue belongs to.
 - `internal/cli/` — cobra command tree, flag definitions
 - `internal/config/` — config struct, file+env+flag loading, validation
 - `internal/scan/` — walk the docs root, classify layout, build `Document`s
-- `internal/madr/` — frontmatter + title extraction, tag mapping
+- `internal/document/` — frontmatter + title extraction, tag mapping
 - `internal/bookstack/` — BookStack API client (shelves, books, pages, tags)
 - `internal/sync/` — planner (diff) and applier; the `Plan` type
 - `internal/report/` — human / json / markdown renderers, secret redaction
@@ -48,8 +49,8 @@ milestone each issue belongs to.
 - `examples/ci/` — GitLab CI, Woodpecker, `docker run` examples
 
 Dependency direction is one-way:
-`cli → config, sync → bookstack, scan, madr`. Nothing imports `cli`.
-`bookstack` must not import `scan`, `madr`, or `sync`.
+`cli → config, sync → bookstack, scan, document`. Nothing imports `cli`.
+`bookstack` must not import `scan`, `document`, or `sync`.
 
 ## Code style
 
@@ -108,6 +109,10 @@ Dependency direction is one-way:
 - Don't commit real BookStack URLs, tokens, or any `.env` file.
 - Don't implement two-way sync, attachment/image upload, or other publish targets —
   explicit non-goals in `docs/ARCHITECTURE.md`.
+- **Don't build MADR linting or validation.** Checking that a record has the right
+  sections, a valid status, or a coherent supersession graph belongs to `adrkit`,
+  `adrlint` and `madr-lint`. shelfpress only warns about things that affect what
+  reaches BookStack, and never blocks a publish.
 - Don't use chapters. v0.1–v1.0 maps directories to books only; chapters are
   deliberately reserved for post-v1.0 nesting work.
 - Don't widen a milestone. If an issue seems to need work from a later milestone,
