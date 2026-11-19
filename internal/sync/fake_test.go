@@ -97,7 +97,27 @@ func (f *fakeClient) CreateShelf(_ context.Context, in bookstack.ShelfInput) (bo
 
 func (f *fakeClient) UpdateShelfBooks(_ context.Context, id int, bookIDs []int) error {
 	f.record("UpdateShelfBooks(%d, %v)", id, bookIDs)
-	return nil
+
+	// Membership is replaced wholesale, as the real API does, so a later
+	// read reflects the write. Without this the fake would make a
+	// non-idempotent sync look idempotent.
+	for i := range f.shelves {
+		if f.shelves[i].ID != id {
+			continue
+		}
+		books := make([]bookstack.Book, 0, len(bookIDs))
+		for _, bid := range bookIDs {
+			for _, b := range f.books {
+				if b.ID == bid {
+					books = append(books, b)
+					break
+				}
+			}
+		}
+		f.shelves[i].Books = books
+		return nil
+	}
+	return &bookstack.APIError{StatusCode: 404, Endpoint: "PUT /api/shelves"}
 }
 
 func (f *fakeClient) ListBooks(_ context.Context, _ bookstack.Filter) ([]bookstack.Book, error) {
