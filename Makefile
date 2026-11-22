@@ -19,7 +19,9 @@ test: ## Run unit tests with the race detector
 	go test -race ./...
 
 test-integration: ## Run integration tests against a live BookStack (needs BOOKSTACK_URL)
-	go test -tags=integration ./test/integration/...
+	# -v so skipped tests say why: without a configured instance the suite
+	# skips, and a bare "ok" would look like it had run.
+	go test -v -count=1 -tags=integration ./test/integration/...
 
 tidy-check: ## Fail if go.mod/go.sum are not tidy (as CI does)
 	go mod tidy
