@@ -84,8 +84,32 @@ func (f *fakeClient) withUntaggedPage(bookID int, title string, tags bookstack.T
 	return p
 }
 
+// ListShelves mirrors the real API by stripping books and tags from the
+// response: /api/shelves omits both, and a fake that returns them lets a
+// planner bug through — which is how the #22 class of defect reaches users.
 func (f *fakeClient) ListShelves(_ context.Context, _ bookstack.Filter) ([]bookstack.Shelf, error) {
-	return f.shelves, f.errListShelves
+	if f.errListShelves != nil {
+		return nil, f.errListShelves
+	}
+
+	stripped := make([]bookstack.Shelf, 0, len(f.shelves))
+	for _, s := range f.shelves {
+		s.Books = nil
+		s.Tags = nil
+		stripped = append(stripped, s)
+	}
+	return stripped, nil
+}
+
+// GetShelf returns the full shelf, books and tags included, as the detail
+// endpoint does.
+func (f *fakeClient) GetShelf(_ context.Context, id int) (bookstack.Shelf, error) {
+	for _, s := range f.shelves {
+		if s.ID == id {
+			return s, nil
+		}
+	}
+	return bookstack.Shelf{}, &bookstack.APIError{StatusCode: 404, Message: "shelf not found"}
 }
 
 func (f *fakeClient) CreateShelf(_ context.Context, in bookstack.ShelfInput) (bookstack.Shelf, error) {

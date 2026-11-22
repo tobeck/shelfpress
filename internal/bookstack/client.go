@@ -19,6 +19,11 @@ import (
 // applier depend on this interface so they can be tested without a server.
 type Client interface {
 	ListShelves(ctx context.Context, f Filter) ([]Shelf, error)
+
+	// GetShelf returns one shelf including its books and tags. The list
+	// endpoint omits both, so membership can only be read from here.
+	GetShelf(ctx context.Context, id int) (Shelf, error)
+
 	CreateShelf(ctx context.Context, s ShelfInput) (Shelf, error)
 	UpdateShelfBooks(ctx context.Context, id int, bookIDs []int) error
 
