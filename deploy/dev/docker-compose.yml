@@ -1,0 +1,77 @@
+# A local BookStack for developing and testing shelfpress.
+#
+# DEVELOPMENT ONLY. Credentials here are fixed and public, and the services
+# bind to localhost. Never run this where anything else can reach it, and
+# never point it at data you care about. See README.md in this directory.
+#
+#   make dev-up      bring it up, wait until the API answers
+#   make dev-down    stop it, keep the database
+#   make dev-clean   stop it and delete the database
+
+name: shelfpress-dev
+
+services:
+  db:
+    # Pinned deliberately: an integration suite whose dependencies drift
+    # fails for reasons that have nothing to do with the change under test.
+    image: mariadb:11.4.13
+    environment:
+      MARIADB_ROOT_PASSWORD: shelfpress-dev-root
+      MARIADB_DATABASE: bookstack
+      MARIADB_USER: bookstack
+      MARIADB_PASSWORD: shelfpress-dev
+    volumes:
+      - db-data:/var/lib/mysql
+    healthcheck:
+      # healthcheck.sh ships with the image and is the supported probe.
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+    restart: unless-stopped
+
+  bookstack:
+    image: lscr.io/linuxserver/bookstack:26.09.3
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PUID: 1000
+      PGID: 1000
+      TZ: Etc/UTC
+      # Must match the published port below, or BookStack generates links
+      # and API URLs pointing somewhere unreachable.
+      APP_URL: http://localhost:8080
+      # Fixed dev key so the compose file is self-contained. Regenerate for
+      # anything real:
+      #   docker run --rm --entrypoint /bin/bash \
+      #     lscr.io/linuxserver/bookstack:26.09.3 appkey
+      APP_KEY: base64:Q8IPZ/mDOQqlCIJBzIZZWK8t4KKdWWDQ7teXG6uLi6I=
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_DATABASE: bookstack
+      DB_USERNAME: bookstack
+      DB_PASSWORD: shelfpress-dev
+    ports:
+      # Bound to loopback, not 0.0.0.0 — this instance has well-known
+      # credentials and must not be reachable from the network.
+      - "127.0.0.1:8080:80"
+    volumes:
+      - bookstack-config:/config
+    healthcheck:
+      # /status returns 200 only once the database migrations have run and
+      # cache and session both work. A TCP port check would pass while
+      # BookStack was still migrating, which is the race that makes a test
+      # run started right after `up` fail intermittently.
+      test:
+        ["CMD-SHELL", "curl -fsS http://localhost:80/status >/dev/null || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 60
+      start_period: 60s
+    restart: unless-stopped
+
+volumes:
+  db-data:
+  bookstack-config:
