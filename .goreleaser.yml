@@ -1,0 +1,72 @@
+version: 2
+
+project_name: shelfpress
+
+before:
+  hooks:
+    - go mod download
+
+builds:
+  - id: shelfpress
+    main: ./cmd/shelfpress
+    binary: shelfpress
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+    # Matches the Makefile's LDFLAGS exactly: the version lands in
+    # internal/cli.version, which `shelfpress version` prints. Keep the two in
+    # step — a release whose binary reports "dev" is worse than no version
+    # command at all.
+    ldflags:
+      - -s -w -X github.com/tobeck/shelfpress/internal/cli.version={{ .Version }}
+    mod_timestamp: "{{ .CommitTimestamp }}"
+
+archives:
+  - id: shelfpress
+    ids:
+      - shelfpress
+    # shelfpress_0.1.0_linux_amd64.tar.gz — the OS/arch is in the name so a
+    # CI job can construct the URL it needs without consulting the release page.
+    name_template: >-
+      {{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}
+    formats:
+      - tar.gz
+    files:
+      - README.md
+      - LICENSE
+
+checksum:
+  name_template: checksums.txt
+  algorithm: sha256
+
+snapshot:
+  version_template: "{{ incpatch .Version }}-snapshot"
+
+changelog:
+  # Generated from commits for v0.1. A hand-written CHANGELOG.md arrives in
+  # v0.3, at which point this should switch to `disable: true` and the release
+  # notes should come from that file instead.
+  use: git
+  sort: asc
+  filters:
+    exclude:
+      - "^chore:"
+      - "^ci:"
+      - "^test:"
+      - "^docs:"
+      - Merge pull request
+      - Merge branch
+
+release:
+  draft: false
+  prerelease: auto
+  footer: |
+    ## Install
+
+    Download the archive for your platform, verify it against `checksums.txt`,
+    and put the binary on your `PATH`. See the README for details.

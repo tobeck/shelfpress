@@ -4,7 +4,9 @@
 Works with any markdown tree; [MADR](https://adr.github.io/madr/) architecture
 decision records get first-class support. A single binary, runnable from any CI.
 
-> ⚠️ **Early development.** Working toward [v0.1](docs/ROADMAP.md). Not usable yet.
+> ⚠️ **Early development.** v0.1 publishes a flat directory of markdown as pages in
+> one book. Subdirectory mapping and deletion are not implemented yet — see the
+> [roadmap](docs/ROADMAP.md).
 
 ## What it does
 
@@ -33,6 +35,35 @@ docs/decisions/                      Shelf "Architecture Decisions"
   modified, and deletes go to BookStack's recycle bin.
 - **CI-agnostic** — a binary and a container. GitHub Actions, GitLab CI, Woodpecker,
   a cron job; nothing is GitHub-specific.
+
+## Install
+
+Download the archive for your platform from the
+[latest release](https://github.com/tobeck/shelfpress/releases/latest), then verify
+and install it:
+
+```sh
+VERSION=0.1.0
+OS=$(uname -s | tr '[:upper:]' '[:lower:]')     # linux or darwin
+ARCH=$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/')
+
+curl -fsSLO "https://github.com/tobeck/shelfpress/releases/download/v${VERSION}/shelfpress_${VERSION}_${OS}_${ARCH}.tar.gz"
+curl -fsSLO "https://github.com/tobeck/shelfpress/releases/download/v${VERSION}/checksums.txt"
+shasum -a 256 -c checksums.txt --ignore-missing
+
+tar -xzf "shelfpress_${VERSION}_${OS}_${ARCH}.tar.gz"
+sudo install shelfpress /usr/local/bin/
+```
+
+Builds are published for linux and darwin on amd64 and arm64.
+
+With a Go toolchain:
+
+```sh
+go install github.com/tobeck/shelfpress/cmd/shelfpress@latest
+```
+
+Confirm what you installed with `shelfpress version`.
 
 ## Usage
 
