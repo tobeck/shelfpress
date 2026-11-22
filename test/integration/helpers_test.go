@@ -7,6 +7,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -263,6 +264,36 @@ func requireTag(t *testing.T, tags bookstack.Tags, name, want string) {
 	}
 	if got != want {
 		t.Errorf("tag %s = %q, want %q", name, got, want)
+	}
+}
+
+// describeOps renders a plan's operations for a failure message.
+//
+// "want 0 ops, got 7" sends the next person to a debugger; naming each
+// operation and its target usually identifies the cause on sight.
+func describeOps(plan sync.Plan) string {
+	if plan.IsEmpty() {
+		return "  (none)"
+	}
+
+	var b strings.Builder
+	for _, op := range plan.Ops {
+		fmt.Fprintf(&b, "  %-18s %s", op.Kind, op.Target)
+		if op.Detail != "" {
+			fmt.Fprintf(&b, " — %s", op.Detail)
+		}
+		b.WriteString("\n")
+	}
+	return strings.TrimRight(b.String(), "\n")
+}
+
+// rewrite replaces a fixture file's contents in place, for tests that need a
+// second sync to see an edit.
+func rewrite(t *testing.T, root, name, content string) {
+	t.Helper()
+
+	if err := os.WriteFile(filepath.Join(root, name), []byte(content), 0o600); err != nil {
+		t.Fatalf("rewriting fixture %s: %v", name, err)
 	}
 }
 

@@ -464,6 +464,14 @@ func TestNormaliseBody(t *testing.T) {
 		{name: "content differs", a: "x\n", b: "y\n", same: false},
 		{name: "blank line in the middle matters", a: "x\n\ny\n", b: "x\ny\n", same: false},
 		{name: "both empty", a: "", b: "\n", same: true},
+
+		// Stripping frontmatter leaves a leading newline where it was, and
+		// BookStack drops it on store. Without trimming the left side,
+		// every document with frontmatter — every MADR record — looks
+		// changed on every run. Verified against a live instance; see
+		// test/integration/idempotency_test.go.
+		{name: "leading newline from stripped frontmatter", a: "\n# T\n\nbody\n", b: "# T\n\nbody", same: true},
+		{name: "several leading newlines", a: "\n\n\n# T\n", b: "# T", same: true},
 	}
 
 	for _, tt := range tests {

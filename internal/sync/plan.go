@@ -97,11 +97,22 @@ func (p *Planner) fetchState(ctx context.Context) (state, error) {
 	if err != nil {
 		return state{}, fmt.Errorf("listing shelves: %w", err)
 	}
-	for i, shelf := range shelves {
-		if shelf.Name == p.cfg.Shelf {
-			s.shelf = &shelves[i]
-			break
+	for _, shelf := range shelves {
+		if shelf.Name != p.cfg.Shelf {
+			continue
 		}
+
+		// The list response omits the shelf's books, exactly as it omits
+		// tags and as /api/search omits page bodies. Reading membership
+		// from the list would find the book missing every time and
+		// re-write the shelf on every run — the same defect as #22, one
+		// level up. The detail endpoint is the only source for `books`.
+		detail, err := p.client.GetShelf(ctx, shelf.ID)
+		if err != nil {
+			return state{}, fmt.Errorf("reading shelf %d (%s): %w", shelf.ID, shelf.Name, err)
+		}
+		s.shelf = &detail
+		break
 	}
 
 	books, err := p.client.ListBooks(ctx, nil)
@@ -212,9 +223,15 @@ func pageDiffers(existing bookstack.Page, doc scan.Document) (string, bool) {
 
 // normaliseBody makes markdown comparable across a BookStack round trip.
 //
-// BookStack stores and returns the markdown it was given, but line endings and
-// trailing whitespace are not reliably preserved. Comparing raw strings would
-// make every run think every page changed.
+// Verified against a live instance (see test/integration): BookStack returns
+// the markdown it was given, except that it strips leading and trailing blank
+// lines. Interior content — trailing spaces on a line, CRLF endings, tabs,
+// fenced blocks — survives verbatim.
+//
+// Both ends matter. Stripping frontmatter leaves a leading newline where it
+// was, which BookStack drops on store; comparing without trimming the left
+// side makes every document with frontmatter — every MADR record — look
+// changed on every run.
 func normaliseBody(s string) string {
 	s = strings.ReplaceAll(s, "\r\n", "\n")
 	s = strings.ReplaceAll(s, "\r", "\n")
@@ -223,7 +240,7 @@ func normaliseBody(s string) string {
 	for i, line := range lines {
 		lines[i] = strings.TrimRight(line, " \t")
 	}
-	return strings.TrimRight(strings.Join(lines, "\n"), "\n")
+	return strings.Trim(strings.Join(lines, "\n"), "\n")
 }
 
 // orphans lists managed pages whose source file is no longer present.

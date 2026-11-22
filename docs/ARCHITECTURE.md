@@ -225,6 +225,30 @@ test double returned bodies the real API never sends. The fakes now strip body
 content from search results, and `make test-integration` (v0.2) verifies the
 behaviour against a live instance.
 
+**Shelf list responses carry no books.** `/api/shelves` omits both `books` and
+`tags`; only `GET /api/shelves/{id}` returns them. This is the same omission one
+level up, and it caused two further defects found by the v0.2 integration suite:
+
+- The planner read membership from the list, never found its book shelved, and
+  emitted `UpdateShelfBooks` on **every** run.
+- The applier built the replacement membership list from the same empty slice.
+  Because `PUT /api/shelves/{id}` replaces membership wholesale, a sync onto a
+  shelf holding anyone else's books would have **silently removed them** —
+  a violation of the "never touch unmanaged content" rule, and the more serious
+  of the two.
+
+Both now read the detail endpoint. The unit fakes strip `books` and `tags` from
+list responses so the gap cannot reopen unnoticed.
+
+**Round-trip: BookStack strips leading and trailing blank lines** from stored
+markdown, and preserves everything else verbatim — trailing spaces within a
+line, CRLF endings, tabs, fenced code blocks. Observed on BookStack 26.09.3.
+
+Trimming only the trailing end is not enough: stripping frontmatter leaves a
+leading newline where it was, so every document with frontmatter — every MADR
+record, the tool's headline use case — compared unequal and was rewritten on
+every run. `normaliseBody` trims both ends.
+
 ## Module layout
 
 ```

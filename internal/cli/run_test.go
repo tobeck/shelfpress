@@ -33,8 +33,25 @@ func newStub() *stubClient { return &stubClient{nextID: 100} }
 
 func (s *stubClient) id() int { s.nextID++; return s.nextID }
 
+// ListShelves omits books and tags, as the real list endpoint does.
 func (s *stubClient) ListShelves(context.Context, bookstack.Filter) ([]bookstack.Shelf, error) {
-	return s.shelves, nil
+	stripped := make([]bookstack.Shelf, 0, len(s.shelves))
+	for _, sh := range s.shelves {
+		sh.Books = nil
+		sh.Tags = nil
+		stripped = append(stripped, sh)
+	}
+	return stripped, nil
+}
+
+// GetShelf returns the full shelf, as the detail endpoint does.
+func (s *stubClient) GetShelf(_ context.Context, id int) (bookstack.Shelf, error) {
+	for _, sh := range s.shelves {
+		if sh.ID == id {
+			return sh, nil
+		}
+	}
+	return bookstack.Shelf{}, &bookstack.APIError{StatusCode: 404, Message: "shelf not found"}
 }
 
 func (s *stubClient) CreateShelf(_ context.Context, in bookstack.ShelfInput) (bookstack.Shelf, error) {

@@ -204,22 +204,24 @@ func (a *Applier) updateShelfBooks(ctx context.Context, op Op, result *Result, b
 }
 
 // shelfBookIDs returns the books currently on a shelf.
+// shelfBookIDs returns the books currently on a shelf.
+//
+// It reads the shelf's detail endpoint, because /api/shelves omits `books`
+// from list responses. Reading membership from the list would return nothing,
+// and since the API replaces membership wholesale, every sync would delete
+// every other book from a shared shelf — content shelfpress does not own
+// (CLAUDE.md rule 3).
 func (a *Applier) shelfBookIDs(ctx context.Context, shelfID int) ([]int, error) {
-	shelves, err := a.client.ListShelves(ctx, nil)
+	shelf, err := a.client.GetShelf(ctx, shelfID)
 	if err != nil {
 		return nil, fmt.Errorf("reading shelf membership: %w", err)
 	}
-	for _, shelf := range shelves {
-		if shelf.ID != shelfID {
-			continue
-		}
-		ids := make([]int, 0, len(shelf.Books))
-		for _, b := range shelf.Books {
-			ids = append(ids, b.ID)
-		}
-		return ids, nil
+
+	ids := make([]int, 0, len(shelf.Books))
+	for _, b := range shelf.Books {
+		ids = append(ids, b.ID)
 	}
-	return nil, nil
+	return ids, nil
 }
 
 // resolveBook finds a book's ID, preferring one created during this run and
