@@ -6,7 +6,7 @@ COMPOSE := docker compose -f deploy/dev/docker-compose.yml
 BOOKSTACK_DEV_URL := http://localhost:8080
 
 .PHONY: help build test test-integration lint fmt tidy-check check clean \
-	dev-up dev-down dev-clean dev-logs
+	dev-up dev-token dev-down dev-clean dev-logs
 
 help: ## List the available targets
 	@grep -hE '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) \
@@ -41,6 +41,9 @@ dev-up: ## Start the local BookStack and wait until its API answers
 	@echo
 	@echo "BookStack is up at $(BOOKSTACK_DEV_URL)"
 	@echo "Sign in with admin@admin.com / password — see deploy/dev/README.md"
+
+dev-token: ## Create an API token on the local BookStack and print it
+	@deploy/dev/seed-token.sh
 
 dev-down: ## Stop the local BookStack, keeping its database
 	$(COMPOSE) down
