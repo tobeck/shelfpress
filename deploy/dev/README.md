@@ -14,6 +14,7 @@ this.
 
 ```sh
 make dev-up      # start, and wait until the API actually answers
+make dev-token   # create an API token and print it
 make dev-down    # stop, keeping the database
 make dev-clean   # stop and delete the database — back to a known-empty instance
 make dev-logs    # follow the logs
@@ -44,18 +45,56 @@ the failure mode this whole milestone exists to eliminate.
 
 ## API tokens
 
-shelfpress authenticates with a BookStack API token, which BookStack normally
-issues through a logged-in user's profile page. Getting one headlessly — for CI,
-where there is no human to click — is handled separately; see issue #25.
-
-To create one by hand in the meantime: sign in, go to **Edit Profile → API
-Tokens → Create Token**, and export the pair.
+shelfpress authenticates with a BookStack API token. BookStack only issues these
+through a logged-in user's profile page (**Edit Profile → API Tokens → Create
+Token**), which is fine by hand but useless in CI, where there is no browser and
+no human to click it. `seed-token.sh` creates one headlessly instead:
 
 ```sh
-export BOOKSTACK_URL=http://localhost:8080
-export BOOKSTACK_TOKEN_ID=...
-export BOOKSTACK_TOKEN_SECRET=...
+make dev-token                              # print a token
+eval "$(deploy/dev/seed-token.sh)"          # export it into this shell
+deploy/dev/seed-token.sh >> "$GITHUB_ENV"   # hand it to later CI steps
 ```
+
+It prints exactly three lines on stdout, so it can be `eval`'d or redirected
+into a CI environment file. Progress and errors go to stderr and stay out of the
+way:
+
+```
+BOOKSTACK_URL=http://localhost:8080
+BOOKSTACK_TOKEN_ID=...
+BOOKSTACK_TOKEN_SECRET=...
+```
+
+**What the token can do.** It belongs to the default admin, so it has full API
+access to all content — enough for the integration suite to create and delete
+shelves, books and pages. The expiry is BookStack's default of 100 years.
+
+**Re-running is safe.** Each run deletes any token with the same name and makes a
+new one, so it never trips a unique constraint. The secret is hashed at rest and
+only visible at creation, so each run necessarily issues a fresh pair; a token
+from an earlier run stops working. Re-export after re-running.
+
+**It waits for BookStack** to answer `/status` rather than assuming it is up, so
+it is safe to run immediately after starting the containers. If BookStack never
+becomes ready it fails with what it tried; `WAIT_TIMEOUT` (default 180s) adjusts
+the budget.
+
+`ADMIN_EMAIL`, `TOKEN_NAME`, `BOOKSTACK_URL`, `SERVICE` and `COMPOSE_FILE` are
+all overridable — see the comments at the top of the script.
+
+### How it works, and why
+
+The token row is created through BookStack's own models, with
+`php artisan tinker` inside the container, replicating what
+`UserApiTokenController::store` does: a 32-character secret stored as a hash, a
+32-character `token_id`, and the model's default expiry.
+
+The alternative — writing the row into MariaDB with SQL — would mean generating
+BookStack's bcrypt secret hash ourselves and encoding the `api_tokens` schema
+here. Both are BookStack's implementation details, and both would break silently
+on an upgrade, leaving a token that exists but never authenticates. Going through
+artisan keeps them BookStack's problem.
 
 Keep real tokens out of this repository. There is no `.env` file here and none
 should be committed — `.env` is already in `.gitignore`.
