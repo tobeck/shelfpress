@@ -63,6 +63,10 @@ done
 # expiry. Re-running deletes any token of the same name first, so the script
 # is idempotent rather than failing on the second run. Deleting by name only
 # ever touches tokens this script created.
+# shellcheck disable=SC2016  # single quotes are deliberate: the $-prefixed
+# names below are PHP variables and must reach tinker unexpanded. Parameters
+# are passed as container environment variables above, not interpolated, so a
+# value containing a quote cannot break out of the snippet.
 output=$(compose exec -T -w /app/www \
   -e SEED_ADMIN_EMAIL="$ADMIN_EMAIL" \
   -e SEED_TOKEN_NAME="$TOKEN_NAME" \
