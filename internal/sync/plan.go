@@ -40,7 +40,7 @@ func (p *Planner) Plan(ctx context.Context, docs []scan.Document) (Plan, error) 
 	}
 
 	// v0.1 maps the whole flat directory to a single book named for the
-	// shelf. Directory-derived books arrive in v0.2.
+	// shelf. Directory-derived books arrive in v0.3.
 	bookName := p.cfg.Shelf
 
 	if state.shelf == nil {
